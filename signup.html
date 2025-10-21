@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>สมัครสมาชิก 💜 Realpal</title>
+<link href="https://fonts.googleapis.com/css2?family=Mali:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --blue:#a5c9ff;
+  --purple:#d6b8ff;
+  --white:#ffffff;
+  --bg:#f5f7ff;
+  --text:#333;
+  --shadow:0 4px 10px rgba(0,0,0,0.05);
+  --radius:18px;
+}
+body{
+  font-family:'Mali',sans-serif;
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  max-width:430px;
+  margin:0 auto;
+  padding-bottom:60px;
+}
+header{
+  background:linear-gradient(90deg,var(--blue),var(--purple));
+  color:var(--white);
+  width:100%;
+  text-align:center;
+  padding:14px 0;
+  font-size:1.4rem;
+  font-weight:600;
+  border-bottom-left-radius:var(--radius);
+  border-bottom-right-radius:var(--radius);
+  box-shadow:var(--shadow);
+}
+form{
+  background:var(--white);
+  padding:16px;
+  margin:18px 0;
+  width:90%;
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+}
+form h3{margin-top:0;color:#5a5ce6;}
+input,button{width:100%;padding:10px;margin:6px 0;border-radius:12px;font-family:'Mali';font-size:1rem;}
+input{border:1px solid #ddd;}
+button{background:linear-gradient(135deg,var(--purple),var(--blue));color:white;border:none;cursor:pointer;transition:0.2s;}
+button:hover{transform:scale(1.03);}
+
+/* Avatar Options */
+.avatar-options{display:flex;justify-content:space-around;flex-wrap:wrap;margin:8px 0;}
+.avatar-options img{width:60px;height:60px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:0.2s;}
+.avatar-options img:hover{transform:scale(1.1);}
+.avatar-options img.selected{border-color:var(--purple);}
+
+/* Profile Upload */
+.profile-upload{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  margin-bottom:12px;
+}
+.profile-upload img{
+  width:100px;
+  height:100px;
+  border-radius:50%;
+  object-fit:cover;
+  border:2px solid var(--purple);
+  margin-bottom:8px;
+}
+footer{
+  margin-top:auto;
+  text-align:center;
+  color:#666;
+  font-size:0.9em;
+}
+</style>
+</head>
+<body>
+
+<header>สมัครสมาชิก 💜</header>
+
+<form id="signupForm">
+  <h3>โปรไฟล์จริง</h3>
+  <div class="profile-upload">
+    <img id="profilePreview" src="https://via.placeholder.com/100?text=Profile" alt="โปรไฟล์">
+    <input type="file" id="profileUpload" accept="image/*">
+  </div>
+
+  <input type="text" id="realName" placeholder="ชื่อจริง" required>
+  <input type="date" id="birthday" required>
+  <input type="email" id="email" placeholder="อีเมล" required>
+  <input type="password" id="password" placeholder="รหัสผ่าน" required>
+
+  <h3>โปรไฟล์อวาตาร์</h3>
+  <p>เลือกอวาตาร์ของคุณ 💫</p>
+  <div class="avatar-options" id="avatars">
+    <img src="avatar1.png" alt="avatar1">
+    <img src="avatar2.png" alt="avatar2">
+    <img src="avatar3.png" alt="avatar3">
+    <img src="avatar4.png" alt="avatar4">
+    <img src="avatar5.png" alt="avatar5">
+    <img src="avatar6.png" alt="avatar6">
+  </div>
+
+  <input type="text" id="avatarName" placeholder="ชื่ออวาตาร์" required>
+
+  <h3>คำถามลับสำหรับเพิ่มเพื่อน</h3>
+  <input type="text" id="friendQuestion" placeholder="เช่น รหัสลับ หรือวันเกิดฉันคืออะไร?">
+
+  <button type="submit">สมัครสมาชิก 💫</button>
+</form>
+
+<footer>มีบัญชีอยู่แล้ว? <a href="login.html">เข้าสู่ระบบ 💙</a></footer>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
+import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
+import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-storage.js";
+
+// Firebase Config (ของคุณ)
+const firebaseConfig = {
+  apiKey: "AIzaSyD16O71K0Erz47p2bqj4bcR2CaffMcJ7KU",
+  authDomain: "realpal-eadb5.firebaseapp.com",
+  projectId: "realpal-eadb5",
+  storageBucket: "realpal-eadb5.firebasestorage.app",
+  messagingSenderId: "755055085773",
+  appId: "1:755055085773:web:b980a014130aca8da2c184",
+  measurementId: "G-CEWMNPW3DL"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const storage = getStorage(app);
+
+let selectedAvatar = "";
+let profileFile = null;
+
+// Preview รูปโปรไฟล์จริง
+document.getElementById('profileUpload').addEventListener('change', (e)=>{
+  profileFile = e.target.files[0];
+  if(profileFile){
+    const reader = new FileReader();
+    reader.onload = ()=> document.getElementById('profilePreview').src = reader.result;
+    reader.readAsDataURL(profileFile);
+  }
+});
+
+// เลือกอวาตาร์
+document.querySelectorAll('#avatars img').forEach(img=>{
+  img.addEventListener('click',()=>{
+    document.querySelectorAll('#avatars img').forEach(i=>i.classList.remove('selected'));
+    img.classList.add('selected');
+    selectedAvatar = img.src;
+  });
+});
+
+// ส่งฟอร์มสมัคร
+document.getElementById('signupForm').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+
+  const realName = document.getElementById('realName').value.trim();
+  const birthday = document.getElementById('birthday').value;
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
+  const avatarName = document.getElementById('avatarName').value.trim();
+  const friendQuestion = document.getElementById('friendQuestion').value.trim();
+
+  if(!selectedAvatar){ alert("กรุณาเลือกอวาตาร์ 💜"); return; }
+  if(!profileFile){ alert("กรุณาอัปโหลดรูปโปรไฟล์ 💜"); return; }
+
+  try{
+    // สร้างบัญชี
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const userId = userCredential.user.uid;
+
+    // อัปโหลดรูปโปรไฟล์
+    const profileRef = ref(storage, `profiles/${userId}_${profileFile.name}`);
+    await uploadBytes(profileRef, profileFile);
+    const profileURL = await getDownloadURL(profileRef);
+
+    // บันทึกข้อมูลผู้ใช้ใน Firestore
+    await setDoc(doc(db, "users", userId), {
+      realName,
+      birthday,
+      email,
+      avatar: selectedAvatar,
+      avatarName,
+      profile: profileURL,
+      friendQuestion,
+      createdAt: new Date()
+    });
+
+    alert("🎉 สมัครสมาชิกสำเร็จ! กำลังพาไปหน้าเข้าสู่ระบบ 💙");
+    window.location.href = "login.html";
+  }catch(err){
+    alert("❌ เกิดข้อผิดพลาด: " + err.message);
+  }
+});
+</script>
+</body>
+</html>
