@@ -6,93 +6,105 @@
 <title>แชท 💜</title>
 <link href="https://fonts.googleapis.com/css2?family=Mali:wght@300;400;600&display=swap" rel="stylesheet">
 <style>
-:root{--blue:#a5c9ff;--purple:#d6b8ff;--white:#ffffff;--bg:#f5f7ff;--text:#333;--shadow:0 4px 10px rgba(0,0,0,0.05);--radius:18px;}
-body{font-family:'Mali',sans-serif;margin:0;background:var(--bg);color:var(--text);display:flex;flex-direction:column;align-items:center;max-width:430px;margin:0 auto;}
-header{background:linear-gradient(90deg,var(--blue),var(--purple));color:var(--white);width:100%;text-align:center;padding:12px 0;font-size:1.4rem;font-weight:600;border-bottom-left-radius:var(--radius);border-bottom-right-radius:var(--radius);}
-main{width:100%;padding:16px 16px 80px 16px;flex:1;display:flex;flex-direction:column;}
-.chat-window{flex:1;overflow-y:auto;margin-bottom:12px;}
-.message{background:var(--white);padding:8px 12px;margin:6px 0;border-radius:16px;box-shadow:var(--shadow);max-width:75%;}
-.message.self{background:#d6b8ff;margin-left:auto;}
-.message .avatar{width:30px;height:30px;border-radius:50%;vertical-align:middle;margin-right:6px;}
-input#msgInput{width:calc(100% - 60px);padding:8px;margin-right:4px;border-radius:16px;border:1px solid #ddd;}
-button#sendBtn{padding:8px 12px;border:none;border-radius:16px;background:linear-gradient(135deg,var(--purple),var(--blue));color:white;cursor:pointer;}
-.call-btn{padding:8px;border:none;border-radius:50%;margin:0 4px;cursor:pointer;background:linear-gradient(135deg,var(--purple),var(--blue));color:white;font-size:1.2rem;}
-footer{background:var(--white);position:fixed;bottom:0;width:100%;max-width:430px;display:flex;justify-content:space-around;padding:10px 0;box-shadow:0 4px 10px rgba(0,0,0,0.05);border-top-left-radius:var(--radius);border-top-right-radius:var(--radius);}
-footer button{background:none;border:none;font-size:1.5rem;cursor:pointer;}
+:root{
+  --blue:#a5c9ff; --purple:#d6b8ff; --white:#fff; --bg:#f5f7ff;
+  --text:#333; --shadow:0 4px 10px rgba(0,0,0,0.05); --radius:18px;
+}
+body{
+  font-family:'Mali',sans-serif; margin:0; background:var(--bg); max-width:430px; margin:0 auto;
+}
+header{
+  background:linear-gradient(90deg,var(--blue),var(--purple));
+  color:white; text-align:center; padding:12px 0; font-weight:600;
+  border-bottom-left-radius:var(--radius); border-bottom-right-radius:var(--radius);
+}
+.friends-box, .chat-box{
+  background:var(--white); margin:12px; padding:12px; border-radius:var(--radius); box-shadow:var(--shadow);
+}
+.friends-box ul, .messages{list-style:none; padding:0; margin:0;}
+.friends-box li, .messages li{padding:6px; border-radius:12px; margin:4px 0; display:flex; align-items:center;}
+.friends-box li{background:#f0f0ff; cursor:pointer;}
+.friends-box li img, .messages li img{width:40px; height:40px; border-radius:50%; margin-right:8px;}
+.messages li.self{justify-content:flex-end; background:#d6b8ff;}
+.messages li.other{justify-content:flex-start; background:#a5c9ff;}
+.chat-input{display:flex; margin-top:8px;}
+.chat-input input{flex:1; padding:8px; border-radius:12px; border:1px solid #ddd;}
+.chat-input button{padding:8px 12px; margin-left:4px; border:none; border-radius:12px; background:linear-gradient(135deg,var(--purple),var(--blue)); color:white; cursor:pointer;}
+.call-btn{margin-top:8px; width:100%; background:#ffa5a5;}
 </style>
 </head>
 <body>
 
 <header>แชท 💜</header>
 
-<main>
-  <div class="chat-window" id="chatWindow"></div>
-  <div style="display:flex;">
+<div class="friends-box">
+  <h3>เลือกเพื่อน</h3>
+  <ul id="friendsList"></ul>
+</div>
+
+<div class="chat-box" style="display:none;">
+  <h3 id="chatWith">แชทกับ...</h3>
+  <ul class="messages" id="messages"></ul>
+  <div class="chat-input">
     <input type="text" id="msgInput" placeholder="พิมพ์ข้อความ...">
     <button id="sendBtn">ส่ง</button>
-    <button class="call-btn" id="voiceCall">🎤</button>
-    <button class="call-btn" id="videoCall">📹</button>
   </div>
-</main>
-
-<footer>
-  <button onclick="goTo('index.html')">🏠</button>
-  <button onclick="goTo('chat.html')">💬</button>
-  <button onclick="goTo('profile.html')">🧑</button>
-  <button onclick="goTo('friendsearch.html')">🧑‍🤝‍🧑</button>
-</footer>
+  <button class="call-btn" id="callBtn">📹 โทรวิดีโอ</button>
+</div>
 
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
-import { getAuth } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
-import { listenMessages, sendMessage, startCall } from "./js/chat.js";
+import { loadFriends } from "./js/profile.js";
+import { sendMessage, listenMessages, startCall } from "./js/chat.js";
 
-const firebaseConfig = {
-  apiKey: "AIzaSyBJ14OYFCG4FAtcLBp_jqWRbZhmaFIVlkg",
-  authDomain: "realfantext-89dc3.firebaseapp.com",
-  projectId: "realfantext-89dc3",
-  storageBucket: "realfantext-89dc3.firebasestorage.app",
-  messagingSenderId: "356157848865",
-  appId: "1:356157848865:web:cc62438b1e20ef8e801260",
-  measurementId: "G-8K4NBE3B61"
-};
+let currentChatId = null;
 
-initializeApp(firebaseConfig);
-const auth = getAuth();
-const currentUserId = localStorage.getItem("currentUserId");
-if(!currentUserId){ alert("❌ กรุณาเข้าสู่ระบบก่อน"); window.location.href="login.html"; }
-
-const chatWindow = document.getElementById('chatWindow');
-const msgInput = document.getElementById('msgInput');
-const sendBtn = document.getElementById('sendBtn');
-
-const chatId = "room_general"; // ตัวอย่างห้องแชทรวม
-
-// ฟังข้อความใหม่แบบ real-time
-listenMessages(chatId, messages=>{
-  chatWindow.innerHTML='';
-  messages.forEach(m=>{
-    const div = document.createElement('div');
-    div.className = 'message '+(m.senderId===currentUserId?'self':'');
-    div.innerHTML = `${m.senderId!==currentUserId? `<img class="avatar" src="${m.avatar}">` : ''}${m.text}`;
-    chatWindow.appendChild(div);
+async function initFriends(){
+  const friends = await loadFriends();
+  const ul = document.getElementById("friendsList");
+  ul.innerHTML = "";
+  friends.forEach(f=>{
+    const li = document.createElement("li");
+    li.innerHTML = `<img src="realpal/avatar1.png" alt="avatar"><span>${f}</span>`;
+    li.addEventListener("click", ()=> openChat(f));
+    ul.appendChild(li);
   });
-  chatWindow.scrollTop = chatWindow.scrollHeight;
-});
+}
+
+function openChat(friendId){
+  currentChatId = [friendId, localStorage.getItem("currentUserId")].sort().join("_"); // chatId unique
+  document.getElementById("chatWith").textContent = `แชทกับ ${friendId}`;
+  document.querySelector(".chat-box").style.display = "block";
+
+  // ฟังข้อความใหม่
+  listenMessages(currentChatId, messages=>{
+    const ul = document.getElementById("messages");
+    ul.innerHTML = "";
+    messages.forEach(m=>{
+      const li = document.createElement("li");
+      li.className = m.senderId===localStorage.getItem("currentUserId") ? "self" : "other";
+      li.innerHTML = `<img src="${m.avatar}" alt="avatar"><span>${m.text}</span>`;
+      ul.appendChild(li);
+    });
+    ul.scrollTop = ul.scrollHeight;
+  });
+}
 
 // ส่งข้อความ
-sendBtn.addEventListener('click', async ()=>{
-  const text = msgInput.value.trim();
-  if(!text) return;
-  await sendMessage(chatId, text);
-  msgInput.value='';
+document.getElementById("sendBtn").addEventListener("click", async ()=>{
+  const text = document.getElementById("msgInput").value.trim();
+  if(!text || !currentChatId) return;
+  await sendMessage(currentChatId, text);
+  document.getElementById("msgInput").value="";
 });
 
-// โทรเสียง / วิดีโอ
-document.getElementById('voiceCall').addEventListener('click', ()=> startCall("peerId_placeholder","voice"));
-document.getElementById('videoCall').addEventListener('click', ()=> startCall("peerId_placeholder","video"));
+// โทรวิดีโอ
+document.getElementById("callBtn").addEventListener("click", ()=>{
+  if(!currentChatId) return;
+  const peerId = currentChatId.replace(localStorage.getItem("currentUserId")+"_","");
+  startCall(peerId,"video");
+});
 
-window.goTo = function(page){ window.location.href=page; };
+initFriends();
 </script>
 
 </body>
