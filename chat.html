@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>แชท 💜</title>
+<link href="https://fonts.googleapis.com/css2?family=Mali:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+:root{--blue:#a5c9ff;--purple:#d6b8ff;--white:#ffffff;--bg:#f5f7ff;--text:#333;--shadow:0 4px 10px rgba(0,0,0,0.05);--radius:18px;}
+body{font-family:'Mali',sans-serif;margin:0;background:var(--bg);color:var(--text);display:flex;flex-direction:column;align-items:center;max-width:430px;margin:0 auto;}
+header{background:linear-gradient(90deg,var(--blue),var(--purple));color:var(--white);width:100%;text-align:center;padding:12px 0;font-size:1.4rem;font-weight:600;border-bottom-left-radius:var(--radius);border-bottom-right-radius:var(--radius);}
+main{width:100%;padding:16px 16px 80px 16px;flex:1;display:flex;flex-direction:column;}
+.chat-window{flex:1;overflow-y:auto;margin-bottom:12px;}
+.message{background:var(--white);padding:8px 12px;margin:6px 0;border-radius:16px;box-shadow:var(--shadow);max-width:75%;}
+.message.self{background:#d6b8ff;margin-left:auto;}
+.message .avatar{width:30px;height:30px;border-radius:50%;vertical-align:middle;margin-right:6px;}
+input#msgInput{width:calc(100% - 60px);padding:8px;margin-right:4px;border-radius:16px;border:1px solid #ddd;}
+button#sendBtn{padding:8px 12px;border:none;border-radius:16px;background:linear-gradient(135deg,var(--purple),var(--blue));color:white;cursor:pointer;}
+.call-btn{padding:8px;border:none;border-radius:50%;margin:0 4px;cursor:pointer;background:linear-gradient(135deg,var(--purple),var(--blue));color:white;font-size:1.2rem;}
+footer{background:var(--white);position:fixed;bottom:0;width:100%;max-width:430px;display:flex;justify-content:space-around;padding:10px 0;box-shadow:0 4px 10px rgba(0,0,0,0.05);border-top-left-radius:var(--radius);border-top-right-radius:var(--radius);}
+footer button{background:none;border:none;font-size:1.5rem;cursor:pointer;}
+</style>
+</head>
+<body>
+
+<header>แชท 💜</header>
+
+<main>
+  <div class="chat-window" id="chatWindow"></div>
+  <div style="display:flex;">
+    <input type="text" id="msgInput" placeholder="พิมพ์ข้อความ...">
+    <button id="sendBtn">ส่ง</button>
+    <button class="call-btn" id="voiceCall">🎤</button>
+    <button class="call-btn" id="videoCall">📹</button>
+  </div>
+</main>
+
+<footer>
+  <button onclick="goTo('index.html')">🏠</button>
+  <button onclick="goTo('chat.html')">💬</button>
+  <button onclick="goTo('profile.html')">🧑</button>
+  <button onclick="goTo('friendsearch.html')">🧑‍🤝‍🧑</button>
+</footer>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
+import { getAuth } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
+import { listenMessages, sendMessage, startCall } from "./js/chat.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBJ14OYFCG4FAtcLBp_jqWRbZhmaFIVlkg",
+  authDomain: "realfantext-89dc3.firebaseapp.com",
+  projectId: "realfantext-89dc3",
+  storageBucket: "realfantext-89dc3.firebasestorage.app",
+  messagingSenderId: "356157848865",
+  appId: "1:356157848865:web:cc62438b1e20ef8e801260",
+  measurementId: "G-8K4NBE3B61"
+};
+
+initializeApp(firebaseConfig);
+const auth = getAuth();
+const currentUserId = localStorage.getItem("currentUserId");
+if(!currentUserId){ alert("❌ กรุณาเข้าสู่ระบบก่อน"); window.location.href="login.html"; }
+
+const chatWindow = document.getElementById('chatWindow');
+const msgInput = document.getElementById('msgInput');
+const sendBtn = document.getElementById('sendBtn');
+
+const chatId = "room_general"; // ตัวอย่างห้องแชทรวม
+
+// ฟังข้อความใหม่แบบ real-time
+listenMessages(chatId, messages=>{
+  chatWindow.innerHTML='';
+  messages.forEach(m=>{
+    const div = document.createElement('div');
+    div.className = 'message '+(m.senderId===currentUserId?'self':'');
+    div.innerHTML = `${m.senderId!==currentUserId? `<img class="avatar" src="${m.avatar}">` : ''}${m.text}`;
+    chatWindow.appendChild(div);
+  });
+  chatWindow.scrollTop = chatWindow.scrollHeight;
+});
+
+// ส่งข้อความ
+sendBtn.addEventListener('click', async ()=>{
+  const text = msgInput.value.trim();
+  if(!text) return;
+  await sendMessage(chatId, text);
+  msgInput.value='';
+});
+
+// โทรเสียง / วิดีโอ
+document.getElementById('voiceCall').addEventListener('click', ()=> startCall("peerId_placeholder","voice"));
+document.getElementById('videoCall').addEventListener('click', ()=> startCall("peerId_placeholder","video"));
+
+window.goTo = function(page){ window.location.href=page; };
+</script>
+
+</body>
+</html>
