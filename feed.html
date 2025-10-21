@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Realpal 💫 ฟีด</title>
+<link href="https://fonts.googleapis.com/css2?family=Mali:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --blue:#a5c9ff; --purple:#d6b8ff; --white:#fff; --bg:#f5f7ff;
+  --text:#333; --shadow:0 4px 10px rgba(0,0,0,0.05); --radius:18px;
+}
+body{
+  font-family:'Mali',sans-serif; background:var(--bg); margin:0; max-width:430px; margin:0 auto;
+}
+header{
+  background:linear-gradient(90deg,var(--blue),var(--purple));
+  color:white; text-align:center; padding:12px 0; font-weight:600;
+  border-bottom-left-radius:var(--radius); border-bottom-right-radius:var(--radius);
+}
+.post-box, .feed-card{
+  background:var(--white); margin:12px; padding:12px; border-radius:var(--radius); box-shadow:var(--shadow);
+}
+.feed-card img.avatar{
+  width:40px; height:40px; border-radius:50%; vertical-align:middle; margin-right:8px;
+}
+.feed-card .author{font-weight:600;}
+.feed-card img.post-img{width:100%; border-radius:12px; margin-top:8px;}
+.comment-box{margin-top:8px;}
+.comment{font-size:0.9rem; margin:4px 0;}
+textarea{width:100%; padding:8px; border-radius:12px; border:1px solid #ddd; font-family:'Mali'; margin-top:6px;}
+button{width:100%; padding:8px; border:none; border-radius:12px; background:linear-gradient(135deg,var(--purple),var(--blue)); color:white; cursor:pointer; margin-top:6px;}
+footer{
+  position:fixed; bottom:0; left:0; right:0; max-width:430px; margin:0 auto;
+  display:flex; justify-content:space-around; background:var(--white); box-shadow:var(--shadow); padding:8px 0;
+  border-top-left-radius:var(--radius); border-top-right-radius:var(--radius);
+}
+footer a{text-decoration:none;color:var(--purple); font-weight:600;}
+</style>
+</head>
+<body>
+
+<header>Realpal 💫</header>
+
+<!-- โพสต์ใหม่ -->
+<div class="post-box">
+  <textarea id="newPost" placeholder="วันนี้คุณเป็นยังไงบ้าง? 💭"></textarea>
+  <input type="file" id="postImage" accept="image/*">
+  <select id="visibility">
+    <option value="public">สาธารณะ</option>
+    <option value="friends">เฉพาะเพื่อน</option>
+  </select>
+  <button id="postBtn">โพสต์ 💜</button>
+</div>
+
+<!-- Feed -->
+<div id="feed"></div>
+
+<footer>
+  <a href="#">🏠</a>
+  <a href="chat.html">💬</a>
+  <a href="profile.html">👤</a>
+</footer>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
+import { getFirestore, collection, addDoc, getDocs, query, orderBy, Timestamp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-storage.js";
+
+// Firebase config
+const firebaseConfig = {
+  apiKey: "AIzaSyD16O71K0Erz47p2bqj4bcR2CaffMcJ7KU",
+  authDomain: "realpal-eadb5.firebaseapp.com",
+  projectId: "realpal-eadb5",
+  storageBucket: "realpal-eadb5.firebasestorage.app",
+  messagingSenderId: "755055085773",
+  appId: "1:755055085773:web:b980a014130aca8da2c184",
+  measurementId: "G-CEWMNPW3DL"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const storage = getStorage(app);
+
+// session
+const currentUserId = localStorage.getItem("currentUserId");
+const avatar = localStorage.getItem("avatar");
+const realName = localStorage.getItem("realName");
+
+// เพิ่มโพสต์ใหม่
+document.getElementById('postBtn').addEventListener('click', async ()=>{
+  const content = document.getElementById('newPost').value.trim();
+  const fileInput = document.getElementById('postImage');
+  const visibility = document.getElementById('visibility').value;
+
+  if(!content && !fileInput.files.length){ alert("กรุณาเขียนข้อความหรืออัปโหลดรูป 💫"); return; }
+
+  let imageUrl = null;
+  if(fileInput.files.length > 0){
+    const file = fileInput.files[0];
+    const storageRef = ref(storage, `posts/${currentUserId}_${Date.now()}_${file.name}`);
+    await uploadBytes(storageRef, file);
+    imageUrl = await getDownloadURL(storageRef);
+  }
+
+  await addDoc(collection(db,"posts"),{
+    userId: currentUserId,
+    content,
+    imageUrl,
+    visibility,
+    createdAt: Timestamp.now(),
+    likes: [],
+    comments: []
+  });
+
+  document.getElementById('newPost').value="";
+  fileInput.value="";
+  loadFeed();
+});
+
+// โหลด feed
+async function loadFeed(){
+  const feedDiv = document.getElementById('feed');
+  feedDiv.innerHTML="";
+  const q = query(collection(db,"posts"), orderBy("createdAt","desc"));
+  const querySnapshot = await getDocs(q);
+  querySnapshot.forEach(docSnap=>{
+    const data = docSnap.data();
+    // กรองโพสต์ friends/public ตามแนวคิด (สาธารณะทุกคน, เพื่อนเฉพาะผู้อนุญาต)
+    if(data.visibility === "public" || data.userId === currentUserId){
+      const postEl = document.createElement("div");
+      postEl.classList.add("feed-card");
+      postEl.innerHTML=`
+        <div><img class="avatar" src="${data.avatar || avatar}" alt="avatar"><span class="author">${realName}</span></div>
+        <p>${data.content || ""}</p>
+        ${data.imageUrl ? `<img class="post-img" src="${data.imageUrl}" />` : ""}
+        <div class="comment-box">
+          ${data.comments.map(c=>`<div class="comment">${c.avatar}: ${c.text}</div>`).join("")}
+        </div>
+      `;
+      feedDiv.appendChild(postEl);
+    }
+  });
+}
+
+loadFeed();
+</script>
+</body>
+</html>
