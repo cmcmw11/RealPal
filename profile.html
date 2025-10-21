@@ -5,135 +5,115 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>โปรไฟล์ 💜</title>
 <link href="https://fonts.googleapis.com/css2?family=Mali:wght@300;400;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css"> <!-- ใช้ CSS รวม -->
+<style>
+:root{
+  --blue:#a5c9ff; --purple:#d6b8ff; --white:#fff; --bg:#f5f7ff;
+  --text:#333; --shadow:0 4px 10px rgba(0,0,0,0.05); --radius:18px;
+}
+body{
+  font-family:'Mali',sans-serif; background:var(--bg); margin:0; max-width:430px; margin:0 auto;
+}
+header{
+  background:linear-gradient(90deg,var(--blue),var(--purple));
+  color:white; text-align:center; padding:12px 0; font-weight:600;
+  border-bottom-left-radius:var(--radius); border-bottom-right-radius:var(--radius);
+}
+.profile-box, .friends-box{
+  background:var(--white); margin:12px; padding:12px; border-radius:var(--radius); box-shadow:var(--shadow);
+}
+.profile-box img{
+  width:100px; height:100px; border-radius:50%; object-fit:cover; display:block; margin:0 auto 8px auto;
+  border:2px solid var(--purple);
+}
+input, select, button{width:100%; padding:8px; margin:6px 0; border-radius:12px; border:1px solid #ddd; font-family:'Mali'; font-size:1rem;}
+button{background:linear-gradient(135deg,var(--purple),var(--blue)); color:white; border:none; cursor:pointer;}
+.friends-box ul{list-style:none; padding:0;}
+.friends-box li{margin:6px 0; padding:6px; border-radius:12px; background:#f0f0ff; display:flex; align-items:center;}
+.friends-box li img{width:40px; height:40px; border-radius:50%; margin-right:8px;}
+</style>
 </head>
 <body>
 
 <header>โปรไฟล์ 💜</header>
 
-<main>
-  <div class="profile-header">
-    <img src="" id="profileAvatar" class="avatar-large">
-    <div class="profile-info">
-      <h2 id="profileName"></h2>
-      <p>ชื่ออวาตาร์: <span id="profileAvatarName">-</span></p>
-      <p>เพื่อน: <span id="friendCount">0</span> คน</p>
-    </div>
-    <button class="edit-btn" onclick="openEditModal()">แก้ไข</button>
-  </div>
-
-  <div id="userPosts"></div>
-</main>
-
-<!-- Modal แก้ไขโปรไฟล์ -->
-<div id="editProfileModal">
-  <form id="editProfileForm">
-    <h3>แก้ไขโปรไฟล์</h3>
-    <div style="text-align:center; margin-bottom:12px;">
-      <img id="editAvatarPreview" src="">
-      <input type="file" id="editAvatarUpload" accept="image/*">
-    </div>
-    <input type="text" id="editRealName" placeholder="ชื่อจริง" required>
-    <input type="text" id="editAvatarName" placeholder="ชื่ออวาตาร์">
-    <button type="submit">บันทึก</button>
-    <button type="button" onclick="closeEditModal()">ยกเลิก</button>
-  </form>
+<div class="profile-box">
+  <img id="profileImage" src="realpal/avatar1.png" alt="โปรไฟล์">
+  <input type="file" id="profileUpload" accept="image/*">
+  <input type="text" id="realName" placeholder="ชื่อจริง">
+  <input type="text" id="avatarName" placeholder="ชื่ออวาตาร์">
+  <button id="saveProfile">บันทึกโปรไฟล์ 💫</button>
 </div>
 
-<footer>
-  <button onclick="goTo('index.html')">🏠</button>
-  <button onclick="goTo('chat.html')">💬</button>
-  <button onclick="goTo('profile.html')">🧑</button>
-  <button onclick="goTo('friendsearch.html')">🧑‍🤝‍🧑</button>
-</footer>
+<div class="friends-box">
+  <h3>เพื่อนของคุณ</h3>
+  <ul id="friendsList"></ul>
+  <input type="text" id="friendId" placeholder="รหัสผู้ใช้เพื่อน">
+  <input type="text" id="friendAnswer" placeholder="ตอบคำถามเพื่อเพิ่มเพื่อน">
+  <button id="addFriendBtn">เพิ่มเพื่อน 💜</button>
+</div>
 
 <script type="module">
-import { loadProfile, loadPosts, updateProfile } from "./js/profile.js";
-import { uploadProfile } from "./js/storage.js";
+import { loadProfile, updateProfile, addFriend, loadFriends } from "./js/profile.js";
 
-const currentUserId = localStorage.getItem("currentUserId");
-if(!currentUserId){
-  alert("❌ กรุณาเข้าสู่ระบบก่อน");
-  window.location.href = "login.html";
+// โหลดโปรไฟล์เดิม
+async function initProfile(){
+  const profile = await loadProfile();
+  document.getElementById("profileImage").src = profile.profile || "realpal/avatar1.png";
+  document.getElementById("realName").value = profile.realName || "";
+  document.getElementById("avatarName").value = profile.avatarName || "";
+  loadFriendsList();
 }
 
-const profileAvatar = document.getElementById('profileAvatar');
-const profileName = document.getElementById('profileName');
-const profileAvatarName = document.getElementById('profileAvatarName');
-const friendCount = document.getElementById('friendCount');
-const userPosts = document.getElementById('userPosts');
-
-const editModal = document.getElementById('editProfileModal');
-const editAvatarPreview = document.getElementById('editAvatarPreview');
-let newProfileFile = null;
-
-window.openEditModal = function(){
-  editModal.style.display='flex';
-  editAvatarPreview.src = profileAvatar.src;
-  document.getElementById('editRealName').value = profileName.textContent;
-  document.getElementById('editAvatarName').value = profileAvatarName.textContent==='-'?'':profileAvatarName.textContent;
+async function loadFriendsList(){
+  const friends = await loadFriends();
+  const ul = document.getElementById("friendsList");
+  ul.innerHTML = "";
+  friends.forEach(f=>{
+    const li = document.createElement("li");
+    li.innerHTML = `<img src="realpal/avatar1.png" alt="avatar"><span>${f}</span>`;
+    ul.appendChild(li);
+  });
 }
-window.closeEditModal = function(){ editModal.style.display='none'; }
 
-document.getElementById('editAvatarUpload').addEventListener('change',(e)=>{
-  newProfileFile = e.target.files[0];
-  if(newProfileFile){
+// อัปโหลดรูปโปรไฟล์ทันที preview
+document.getElementById("profileUpload").addEventListener("change", e=>{
+  const file = e.target.files[0];
+  if(file){
     const reader = new FileReader();
-    reader.onload = ()=> editAvatarPreview.src = reader.result;
-    reader.readAsDataURL(newProfileFile);
+    reader.onload = ()=> document.getElementById("profileImage").src = reader.result;
+    reader.readAsDataURL(file);
   }
 });
 
-// submit form แก้ไขโปรไฟล์
-document.getElementById('editProfileForm').addEventListener('submit', async (e)=>{
-  e.preventDefault();
-  const newName = document.getElementById('editRealName').value.trim();
-  const newAvatarName = document.getElementById('editAvatarName').value.trim();
-  let newAvatarURL = profileAvatar.src;
+// บันทึกโปรไฟล์
+document.getElementById("saveProfile").addEventListener("click", async ()=>{
+  const profileFile = document.getElementById("profileUpload").files[0];
+  const realName = document.getElementById("realName").value.trim();
+  const avatarName = document.getElementById("avatarName").value.trim();
 
   try{
-    if(newProfileFile){
-      newAvatarURL = await uploadProfile(currentUserId,newProfileFile);
-    }
-
-    await updateProfile({realName:newName, avatarName:newAvatarName, avatar:newAvatarURL});
-
-    profileAvatar.src = newAvatarURL;
-    profileName.textContent = newName;
-    profileAvatarName.textContent = newAvatarName || '-';
-    alert("อัปเดตโปรไฟล์เรียบร้อย 💜");
-    closeEditModal();
+    await updateProfile({realName, avatarName, profileFile});
+    alert("🌸 บันทึกโปรไฟล์เรียบร้อย!");
   }catch(err){
     alert("❌ "+err.message);
   }
 });
 
-window.goTo = function(page){ window.location.href=page; }
+// เพิ่มเพื่อน
+document.getElementById("addFriendBtn").addEventListener("click", async ()=>{
+  const friendId = document.getElementById("friendId").value.trim();
+  const answer = document.getElementById("friendAnswer").value.trim();
 
-// โหลดข้อมูลตอนเริ่มต้น
-(async ()=>{
-  await loadProfile().then(data=>{
-    profileAvatar.src = data.avatar || 'https://via.placeholder.com/60';
-    profileName.textContent = data.realName || '-';
-    profileAvatarName.textContent = data.avatarName || '-';
-    friendCount.textContent = data.friends?.length || 0;
-  });
+  try{
+    await addFriend(friendId, answer);
+    alert("✅ เพิ่มเพื่อนสำเร็จ!");
+    loadFriendsList();
+  }catch(err){
+    alert("❌ "+err.message);
+  }
+});
 
-  await loadPosts().then(posts=>{
-    userPosts.innerHTML='';
-    posts.forEach(data=>{
-      if(data.userId !== currentUserId) return;
-      const postDiv = document.createElement('div');
-      postDiv.className='post';
-      postDiv.innerHTML=`
-        <div class="author">${data.realName}</div>
-        <div class="content">${data.content || ''}${data.imageUrl? `<br><img src="${data.imageUrl}" style="max-width:100%;">` : ''}</div>
-        ${data.repostFrom? `<div class="repost">🔁 รีโพสต์จาก ${data.repostFrom}</div>` : ''}
-      `;
-      userPosts.appendChild(postDiv);
-    });
-  });
-})();
+initProfile();
 </script>
 
 </body>
